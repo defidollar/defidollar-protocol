@@ -26,14 +26,12 @@ contract DefiDollarCore {
   constructor(
     address[] memory _reserves,
     address[] memory _aTokens,
-    address _defiDollarToken,
     address _aaveLendingPool,
-    address _aaveLendingPoolCore,
-    address _feePool
+    address _aaveLendingPoolCore
+    // address _feePool
   ) public {
     reserves = _reserves;
     numReserves = uint8(_reserves.length);
-    token = DefiDollarToken(_defiDollarToken);
     aaveLendingPool = ILendingPool(_aaveLendingPool);
     // These allowances might eventually run out, so need a function to be able to refresh allowances
     for (uint8 i = 0; i < numReserves; i++) {
@@ -43,15 +41,17 @@ contract DefiDollarCore {
         "Reserve coin approval failed"
       );
       // interest from aave will go to feePool contract
-      IAToken(_aTokens[i]).redirectInterestStream(_feePool);
+      // IAToken(_aTokens[i]).redirectInterestStream(_feePool);
     }
   }
 
   function initialize(
+    address _defiDollarToken,
     address _bFactory,
     uint[] calldata balances,
     uint[] calldata denorm
   ) external /* notInitialized */ {
+    token = DefiDollarToken(_defiDollarToken);
     bpool = BFactory(_bFactory).newBPool();
     for (uint8 i = 0; i < numReserves; i++) {
       _pullToken(reserves[i], msg.sender, address(this), balances[i]);
@@ -67,16 +67,23 @@ contract DefiDollarCore {
     token.mint(msg.sender, INIT_POOL_SUPPLY);
   }
 
-  function mintExactIn(address reserve, uint tokenAmountIn, uint minPoolAmountOut, address to) external {
+  function mintExactIn(address reserve, uint tokenAmountIn, uint minPoolAmountOut, address to)
+    external
+    returns(uint)
+  {
     ReserveMetadata storage mdata = reserveToMetadata[reserve];
     _pullToken(reserve, msg.sender, address(this), tokenAmountIn);
     _depositToAave(reserve, tokenAmountIn);
     // will revert if reserve and hence mdata.aToken is not supported
     uint poolAmountOut = bpool.joinswapExternAmountIn(mdata.aToken, tokenAmountIn, minPoolAmountOut);
     token.mint(to, poolAmountOut);
+    return poolAmountOut;
   }
 
-  function mintExactOut(address reserve, uint poolAmountOut, uint maxAmountIn, address to) external {
+  function mintExactOut(address reserve, uint poolAmountOut, uint maxAmountIn, address to)
+    external
+    returns (uint)
+  {
     ReserveMetadata storage mdata = reserveToMetadata[reserve];
     _pullToken(reserve, msg.sender, address(this), maxAmountIn);
     _depositToAave(reserve, maxAmountIn);
@@ -86,20 +93,29 @@ contract DefiDollarCore {
       _withdrawFromAave(reserve, maxAmountIn - tokenAmountIn, to);
     }
     token.mint(to, poolAmountOut);
+    return tokenAmountIn;
   }
 
-  function redeemExact(address tokenOut, uint poolAmountIn, uint minAmountOut) external {
+  function redeemExact(address tokenOut, uint poolAmountIn, uint minAmountOut)
+    external
+    returns(uint)
+  {
     token.burn(msg.sender, poolAmountIn);
     ReserveMetadata storage mdata = reserveToMetadata[tokenOut];
     uint tokenAmountOut = bpool.exitswapPoolAmountIn(mdata.aToken, poolAmountIn, minAmountOut);
     _withdrawFromAave(tokenOut, tokenAmountOut, msg.sender);
+    return tokenAmountOut;
   }
 
-  function redeemExactOut(address tokenOut, uint tokenAmountOut, uint maxPoolAmountIn) external {
+  function redeemExactOut(address tokenOut, uint tokenAmountOut, uint maxPoolAmountIn)
+    external
+    returns(uint)
+  {
     ReserveMetadata storage mdata = reserveToMetadata[tokenOut];
     uint poolAmountIn = bpool.exitswapExternAmountOut(mdata.aToken, tokenAmountOut, maxPoolAmountIn);
     token.burn(msg.sender, poolAmountIn);
     _withdrawFromAave(tokenOut, tokenAmountOut, msg.sender);
+    return poolAmountIn;
   }
 
   // #### Internal Functions ###
