@@ -6,7 +6,9 @@ import "./Pool.sol";
 import "./balancer/smart-pools/IBFactory.sol";
 
 contract Core {
+  address[] public reserves;
   IAToken[] public aTokens;
+  uint public numReserves;
   Pool public pool;
   IBPool public bpool;
   Oracle public oracle;
@@ -14,11 +16,14 @@ contract Core {
   uint public constant UINT_MAX_VALUE = uint256(-1);
 
   constructor(
+    address[] memory _reserves,
     IAToken[] memory _aTokens,
     address _pool,
     address _oracle
   ) public {
+    reserves = _reserves;
     aTokens = _aTokens;
+    numReserves = _aTokens.length;
     pool = Pool(_pool);
     bpool = IBPool(pool._bPool());
     oracle = Oracle(_oracle);
@@ -27,7 +32,7 @@ contract Core {
   function reBalance() public {
     int256[] memory feed = oracle.getPriceFeed();
     uint supply = pool.totalSupply();
-    for(uint8 i = 0; i < aTokens.length; i++) {
+    for(uint8 i = 0; i < numReserves; i++) {
       IAToken aToken = aTokens[i];
       (uint norm, uint poolBalance, uint denorm) = _poolMetadata(address(aToken));
       uint marketCap = supply * norm;

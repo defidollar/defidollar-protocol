@@ -38,16 +38,21 @@ contract AavePlugin {
         IERC20(_aTokens[i]).approve(address(_pool), UINT_MAX_VALUE),
         "AToken coin approval failed"
       );
+      require(
+        IERC20(address(_pool)).approve(address(_pool), UINT_MAX_VALUE),
+        "Pool coin approval failed"
+      );
     }
   }
 
   function mintExactIn(address tokenIn, uint256 tokenAmountIn, uint minPoolAmountOut)
     external
+    returns(uint poolAmountOut)
   {
     _pull(tokenIn, msg.sender, address(this), tokenAmountIn);
     _depositToAave(tokenIn, tokenAmountIn);
     address aTokenIn = reserveToAtoken[tokenIn];
-    uint poolAmountOut = pool.joinswapExternAmountIn(aTokenIn, tokenAmountIn);
+    poolAmountOut = pool.joinswapExternAmountIn(aTokenIn, tokenAmountIn);
     require(
       poolAmountOut >= minPoolAmountOut,
       "ERR_MIN_POOL_OUT"
@@ -57,9 +62,10 @@ contract AavePlugin {
 
   function mintExactOut(uint poolAmountOut, address tokenIn, uint maxTokenAmountIn)
     external
+    returns(uint tokenAmountIn)
   {
     address aTokenIn = reserveToAtoken[tokenIn];
-    uint tokenAmountIn = pool.calcSingleInGivenPoolOut(poolAmountOut, aTokenIn);
+    tokenAmountIn = pool.calcSingleInGivenPoolOut(poolAmountOut, aTokenIn);
     require(
       tokenAmountIn <= maxTokenAmountIn,
       "ERR_MAX_TOKEN_IN"
@@ -72,10 +78,11 @@ contract AavePlugin {
 
   function redeemExact(uint poolAmountIn, address tokenOut, uint minTokenAmountOut)
     external
+    returns(uint tokenAmountOut)
   {
     _pull(address(pool), msg.sender, address(this), poolAmountIn);
     address aTokenOut = reserveToAtoken[tokenOut];
-    uint tokenAmountOut = pool.exitswapPoolAmountIn(poolAmountIn, aTokenOut);
+    tokenAmountOut = pool.exitswapPoolAmountIn(poolAmountIn, aTokenOut);
     require(
       tokenAmountOut >= minTokenAmountOut,
       "ERR_MIN_TOKEN_OUT"
@@ -86,9 +93,10 @@ contract AavePlugin {
 
   function redeemExactOut(address tokenOut, uint tokenAmountOut, uint maxPoolAmountIn)
     external
+    returns(uint poolAmountIn)
   {
     address aTokenOut = reserveToAtoken[tokenOut];
-    uint poolAmountIn = pool.calcPoolInGivenSingleOut(aTokenOut, tokenAmountOut);
+    poolAmountIn = pool.calcPoolInGivenSingleOut(aTokenOut, tokenAmountOut);
     require(
       poolAmountIn <= maxPoolAmountIn,
       "ERR_MAX_POOL_IN"

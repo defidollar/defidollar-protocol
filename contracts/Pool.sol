@@ -1,15 +1,36 @@
 pragma solidity ^0.5.12;
 
-// import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./balancer/smart-pools/LiquidityBootstrappingPool.sol";
 
 contract Pool is LiquidityBootstrappingPool {
+  uint public constant MIN_FEE = 10**12;
+
   modifier _onlyController_() {
     require(
       msg.sender == _controller,
       "ONLY_CONTROLLER"
     );
     _;
+  }
+
+  constructor(
+    address factoryAddress,
+    address[] memory tokens,
+    uint256[] memory startBalances,
+    uint256[] memory startWeights,
+    uint256[] memory endWeights
+  )
+    public
+    LiquidityBootstrappingPool(
+      factoryAddress,
+      tokens,
+      startBalances,
+      startWeights,
+      endWeights,
+      [0, 0, MIN_FEE] // startBlock, endBlock, swapFee
+    )
+  {
+
   }
 
   function calcSingleInGivenPoolOut(uint poolAmountOut, address tokenIn)

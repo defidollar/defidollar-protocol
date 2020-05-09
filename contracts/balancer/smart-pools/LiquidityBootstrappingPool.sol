@@ -102,8 +102,8 @@ contract LiquidityBootstrappingPool is PCToken {
         _controller = manager;
     }
 
-    function createPool()
-        external
+    function createPool(uint initialSupply)
+        public
         _logs_
         _lock_
         returns (LiquidityBootstrappingPool)
@@ -115,6 +115,7 @@ contract LiquidityBootstrappingPool is PCToken {
         _bPool = _bFactory.newBPool();
 
         _bPool.setSwapFee(_swapFee);
+        _bPool.setPublicSwap(true);
 
         for (uint i = 0; i < _tokens.length; i++) {
             address t = _tokens[i];
@@ -130,8 +131,8 @@ contract LiquidityBootstrappingPool is PCToken {
 
         _created = true;
 
-        _mintPoolShare(INIT_POOL_SUPPLY);
-        _pushPoolShare(msg.sender, INIT_POOL_SUPPLY);
+        _mintPoolShare(initialSupply);
+        _pushPoolShare(msg.sender, initialSupply);
     }
 
     function pokeWeights()

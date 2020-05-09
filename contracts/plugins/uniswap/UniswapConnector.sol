@@ -3,8 +3,7 @@ pragma solidity ^0.5.12;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IUniswap } from "./IUniswap.sol";
-import { Core } from "../Core.sol";
-import { DefiDollarToken } from "../DefiDollarToken.sol";
+import { Core } from "../../Core.sol";
 
 contract UniswapConnector {
   // IUniswap public uniswap;

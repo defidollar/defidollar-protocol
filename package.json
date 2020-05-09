@@ -18,9 +18,10 @@
     "web3": "^1.2.6"
   },
   "scripts": {
-    "compile": "npx buidler compile",
+    "compile": "truffle compile",
+    "migrate": "truffle migrate --reset",
     "testrpc": "ganache-cli --deterministic --gasLimit 10000000",
-    "test": "npx buidler test"
+    "test": "truffle test"
   },
   "author": "atvanguard <93arpit@gmail.com>",
   "license": "ISC"
