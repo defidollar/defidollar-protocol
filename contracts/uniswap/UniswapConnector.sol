@@ -3,18 +3,18 @@ pragma solidity ^0.5.12;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IUniswap } from "./IUniswap.sol";
-import { DefiDollarCore } from "../DefiDollarCore.sol";
+import { Core } from "../Core.sol";
 import { DefiDollarToken } from "../DefiDollarToken.sol";
 
 contract UniswapConnector {
   // IUniswap public uniswap;
-  // DefiDollarCore public defiDollarCore;
+  // Core public defiDollarCore;
   // DefiDollarToken public token;
 
   // uint256 public constant UINT_MAX_VALUE = uint256(-1);
 
   // constructor(address _defiDollarCore, address _defiDollarToken, address _uniswap) public {
-  //   defiDollarCore = DefiDollarCore(_defiDollarCore);
+  //   defiDollarCore = Core(_defiDollarCore);
   //   token = DefiDollarToken(_defiDollarToken);
   //   uniswap = IUniswap(_uniswap);
   // }

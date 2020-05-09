@@ -1,7 +1,7 @@
 const BPool = artifacts.require('BPool');
 const BFactory = artifacts.require('BFactory');
 
-const DefiDollarCore = artifacts.require("DefiDollarCore");
+const Core = artifacts.require("Core");
 const DefiDollarToken = artifacts.require("DefiDollarToken");
 const Reserve = artifacts.require("Reserve");
 const MockIAToken = artifacts.require("MockIAToken");
@@ -11,12 +11,12 @@ const fromWei = web3.utils.fromWei;
 const toBN =web3.utils.toBN;
 const MAX = web3.utils.toTwosComplement(-1);
 
-contract("DefiDollarCore", accounts => {
+contract("Core", accounts => {
   const admin = accounts[0]
   const user1 = accounts[1]
 
   before(async function() {
-    this.core = await DefiDollarCore.deployed()
+    this.core = await Core.deployed()
     this.bFactory = await BFactory.deployed()
     this.defiDollarToken = await DefiDollarToken.deployed()
     this.numReserves = await this.core.numReserves()

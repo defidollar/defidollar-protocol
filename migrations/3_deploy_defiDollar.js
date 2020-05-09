@@ -1,4 +1,4 @@
-const DefiDollarCore = artifacts.require("DefiDollarCore");
+const Core = artifacts.require("Core");
 const DefiDollarToken = artifacts.require("DefiDollarToken");
 const LendingPool = artifacts.require("MockLendingPool");
 const aToken = artifacts.require("MockIAToken");
@@ -27,14 +27,14 @@ module.exports = async function (deployer, network, accounts) {
   await deployer.deploy(Oracle, aggregators.map(a => a.address))
   const oracle = await Oracle.deployed()
 
-  await deployer.deploy(DefiDollarCore,
+  await deployer.deploy(Core,
     reserves.map(r => r.address),
     aTokens.map(r => r.address),
     lendingPool.address,
     lendingPool.address, // lendingPoolCore actually, but doesn't matter for mocks
     oracle.address
   );
-  const core = await DefiDollarCore.deployed()
+  const core = await Core.deployed()
   await deployer.deploy(DefiDollarToken, core.address)
   const defiDollarToken = await DefiDollarToken.deployed()
 

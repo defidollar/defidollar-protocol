@@ -2,7 +2,7 @@ pragma solidity ^0.5.12;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { ILendingPool } from "../aave/ILendingPool.sol";
+import { ILendingPool } from "../plugins/aave/ILendingPool.sol";
 import { MockIAToken } from "./MockIAToken.sol";
 
 contract MockLendingPool is ILendingPool {

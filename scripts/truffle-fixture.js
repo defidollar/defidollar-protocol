@@ -1,4 +1,4 @@
-const DefiDollarCore = artifacts.require("DefiDollarCore");
+const Core = artifacts.require("Core");
 const DefiDollarToken = artifacts.require("DefiDollarToken");
 const LendingPool = artifacts.require("MockLendingPool");
 const aToken = artifacts.require("MockIAToken");
@@ -24,7 +24,7 @@ async function deployDefiDollar(accounts) {
   for (let i = 0; i < NUM_RESERVES; i++) {
     aTokens.push(await aToken.at(await lendingPool.rToA(reserves[i].address)))
   }
-  const core = await DefiDollarCore.new(
+  const core = await Core.new(
     reserves.map(r => r.address),
     aTokens.map(r => r.address),
     lendingPool.address,
@@ -49,7 +49,7 @@ async function deployDefiDollar(accounts) {
     balances,
     denorm
   )
-  DefiDollarCore.setAsDeployed(core)
+  Core.setAsDeployed(core)
 };
 
 module.exports = async function (accounts) {
