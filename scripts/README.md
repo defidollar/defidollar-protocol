@@ -13,7 +13,7 @@ INITIAL_AMOUNT=500000 truffle migrate --reset && truffle exec scripts/simulate.j
      'usd-coin': 0.20624925883791878,
      'true-usd': 0.33654444004026673 },
   profit: 1259.6890281457277 }
-  
+
 { deviations:
    { dusd: 0.6978653457506134,
      dai: 1.3879218964838727,
@@ -22,12 +22,12 @@ INITIAL_AMOUNT=500000 truffle migrate --reset && truffle exec scripts/simulate.j
 ```
 
 ```
-INITIAL_AMOUNT=500000 truffle migrate --reset && truffle exec scripts/simulate.js
+INITIAL_AMOUNT=50000 truffle migrate --reset && truffle exec scripts/simulate.js
 ```
 ```
 { deviations:
-   { dusd: 0.00012597691198801275,
-     dai: 1.3879218964838727,
-     'usd-coin': 0.20624925883791878 },
-  profit: 1091.5634018769551 }
+   { dusd: 0, dai: 1.3879218964838727, nusd: 2.962608757300444 },
+  profit: 2033.237658171714,
+  mp1: 51539.28556499885,
+  mp2: 59770.47750485338 }
 ```

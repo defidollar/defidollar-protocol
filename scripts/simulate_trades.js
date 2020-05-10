@@ -1,12 +1,5 @@
 const fs = require('fs')
-
-const BPool = artifacts.require('BPool');
-const BFactory = artifacts.require('BFactory');
-
-const Core = artifacts.require("Core");
-const DefiDollarToken = artifacts.require("DefiDollarToken");
-const Reserve = artifacts.require("Reserve");
-const MockIAToken = artifacts.require("MockIAToken");
+const utils = require('../utils/utils')
 
 const toWei = web3.utils.toWei;
 const fromWei = web3.utils.fromWei;
@@ -18,27 +11,17 @@ async function runSimulation() {
   const admin = accounts[0]
   const user1 = accounts[1]
 
-  this.core = await Core.deployed()
-  this.bpool = await BPool.at(await this.core.bpool())
-  this.bFactory = await BFactory.deployed()
-  this.defiDollarToken = await DefiDollarToken.deployed()
-  this.numReserves = await this.core.numReserves()
-  this.reserves = []
-  this.aTokens = []
-  for (let i = 0; i < this.numReserves; i++) {
-    this.reserves.push(await Reserve.at(await this.core.reserves(i)))
-    this.aTokens.push(await MockIAToken.at(await this.core.reserveToAtoken(this.reserves[i].address)))
-  }
+  const _artifacts = await utils.getArtifacts(artifacts)
 
   // const coins = ['usd-coin', 'tether']
-  const coins = ['usd-coin', 'true-usd']
   // const coins = ['dai', 'usd-coin']
   // const coins = ['dai', 'nusd']
+  const coins = ['usd-coin', 'true-usd']
   const data = {}
   const deviations = { dusd: 0 }
   for (let i = 0; i < coins.length; i++) {
     const id = coins[i]
-    data[id] = JSON.parse(fs.readFileSync(`./data/coingecko/${id}.json`)).prices //.slice(0, 5)
+    data[id] = JSON.parse(fs.readFileSync(`./data/coingecko/${id}.json`)).prices//.slice(0, 5)
     deviations[id] = 0
   }
 
@@ -46,12 +29,12 @@ async function runSimulation() {
 
   console.log(`Simulating for ${numPricePoints} price points...`)
   let profit = 0
-  await this.aTokens[0].approve(this.bpool.address, MAX, { from: user1 })
-  await this.aTokens[1].approve(this.bpool.address, MAX, { from: user1 })
+  await _artifacts.aTokens[0].approve(_artifacts.bpool.address, MAX, { from: user1 })
+  await _artifacts.aTokens[1].approve(_artifacts.bpool.address, MAX, { from: user1 })
   for (let i = 0; i < numPricePoints; i++) {
     const _prices = [ data[coins[0]][i][1], data[coins[1]][i][1] ]
-    const poolSize_0 = parseFloat(fromWei(await this.aTokens[0].balanceOf(this.bpool.address)))
-    const poolSize_1 = parseFloat(fromWei(await this.aTokens[1].balanceOf(this.bpool.address)))
+    const poolSize_0 = weiToFloatEther(await _artifacts.aTokens[0].balanceOf(_artifacts.bpool.address))
+    const poolSize_1 = weiToFloatEther(await _artifacts.aTokens[1].balanceOf(_artifacts.bpool.address))
     const spotPriceOf_0_1 = poolSize_1 / poolSize_0
     const newSpotPriceOf_0_1 = data[coins[0]][i][1] / data[coins[1]][i][1]
     let desiredSpotRatio = newSpotPriceOf_0_1 / spotPriceOf_0_1
@@ -63,29 +46,29 @@ async function runSimulation() {
       tokenOut = 1
       desiredSpotRatio = 1 / desiredSpotRatio
     }
-    const tokenInPoolSize = weiToFloatEther(await this.aTokens[tokenIn].balanceOf(this.bpool.address))
+    const tokenInPoolSize = weiToFloatEther(await _artifacts.aTokens[tokenIn].balanceOf(_artifacts.bpool.address))
     let tokenAmountIn = tokenInPoolSize * (Math.sqrt(desiredSpotRatio) - 1)
     if (tokenAmountIn > tokenInPoolSize / 2) { // to avoid ERR_MAX_IN_RATIO
       tokenAmountIn = tokenInPoolSize / 2
     }
-    const tokenInBalance = weiToFloatEther(await this.aTokens[tokenIn].balanceOf(user1))
+    const tokenInBalance = weiToFloatEther(await _artifacts.aTokens[tokenIn].balanceOf(user1))
     if (tokenInBalance < tokenAmountIn) {
-      await this.aTokens[tokenIn].mint(user1, floatToWei(tokenAmountIn - tokenInBalance + 1), { from: admin })
+      await _artifacts.aTokens[tokenIn].mint(user1, floatToWei(tokenAmountIn - tokenInBalance + 1), { from: admin })
     }
     deviations[coins[0]] += Math.abs(data[coins[0]][i][1] - 1)
     deviations[coins[1]] += Math.abs(data[coins[1]][i][1] - 1)
-    let { tokenAmountOut } = await this.bpool.swapExactAmountIn.call(
-      this.aTokens[tokenIn].address,
+    let { tokenAmountOut } = await _artifacts.bpool.swapExactAmountIn.call(
+      _artifacts.aTokens[tokenIn].address,
       floatToWei(tokenAmountIn),
-      this.aTokens[tokenOut].address,
+      _artifacts.aTokens[tokenOut].address,
       0, // minAmountOut
       MAX, // maxPrice
       { from: user1 }
     )
-    await this.bpool.swapExactAmountIn(
-      this.aTokens[tokenIn].address,
+    await _artifacts.bpool.swapExactAmountIn(
+      _artifacts.aTokens[tokenIn].address,
       floatToWei(tokenAmountIn),
-      this.aTokens[tokenOut].address,
+      _artifacts.aTokens[tokenOut].address,
       0, // minAmountOut
       MAX, // maxPrice
       { from: user1 }
@@ -95,9 +78,9 @@ async function runSimulation() {
     profit += _profit
     const newCoinValue = await getCoinValue(
       _prices,
-      this.aTokens,
-      this.bpool.address,
-      weiToFloatEther(await this.defiDollarToken.totalSupply())
+      _artifacts.aTokens,
+      _artifacts.bpool.address,
+      weiToFloatEther(await _artifacts.pool.totalSupply())
     )
     deviations.dusd += Math.abs(newCoinValue - 1)
     console.log(i, { _prices, poolSize_0, poolSize_1, tokenIn, tokenOut, desiredSpotRatio, tokenInPoolSize, tokenAmountIn, tokenAmountOut, _profit, newCoinValue })

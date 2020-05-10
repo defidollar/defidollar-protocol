@@ -29,13 +29,16 @@ contract Core {
     oracle = Oracle(_oracle);
   }
 
-  function reBalance() public {
+  function reBalance()
+    public
+  {
     int256[] memory feed = oracle.getPriceFeed();
     uint supply = pool.totalSupply();
     for(uint8 i = 0; i < numReserves; i++) {
       IAToken aToken = aTokens[i];
       (uint norm, uint poolBalance, uint denorm) = _poolMetadata(address(aToken));
       uint marketCap = supply * norm;
+      // @todo feed could be 0
       uint newBalance = marketCap / uint(feed[i]);
       if (newBalance == poolBalance) {
         continue;

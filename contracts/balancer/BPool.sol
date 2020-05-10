@@ -275,7 +275,6 @@ contract BPool is BBronze, BToken, BMath {
         _logs_
         _lock_
     {
-
         require(msg.sender == _controller, "ERR_NOT_CONTROLLER");
         require(_records[token].bound, "ERR_NOT_BOUND");
         require(!_finalized, "ERR_IS_FINALIZED");

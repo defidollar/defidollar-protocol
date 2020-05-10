@@ -66,8 +66,8 @@ contract Pool is LiquidityBootstrappingPool {
     _onlyController_
   {
     _bPool.rebind(token, balance, denorm);
-    uint bal = IERC20(token).balanceOf(address(this));
+    IERC20 erc20 = IERC20(token);
     // send any residue tokens to core
-    _pushUnderlying(token, _controller, bal);
+    erc20.transfer(_controller, erc20.balanceOf(address(this)));
   }
 }

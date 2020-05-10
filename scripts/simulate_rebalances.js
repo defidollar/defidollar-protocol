@@ -1,14 +1,5 @@
 const fs = require('fs')
-
-const BPool = artifacts.require('BPool');
-const BFactory = artifacts.require('BFactory');
-
-const Core = artifacts.require("Core");
-const DefiDollarToken = artifacts.require("DefiDollarToken");
-const Reserve = artifacts.require("Reserve");
-const MockIAToken = artifacts.require("MockIAToken");
-const Oracle = artifacts.require("Oracle");
-const Aggregator = artifacts.require("MockAggregator");
+const utils = require('../utils/utils')
 
 const toWei = web3.utils.toWei;
 const fromWei = web3.utils.fromWei;
@@ -16,30 +7,14 @@ const toBN = web3.utils.toBN;
 const MAX = web3.utils.toTwosComplement(-1);
 
 async function runSimulation() {
-  const accounts = await web3.eth.getAccounts()
-  const admin = accounts[0]
-  const user1 = accounts[1]
+  // const admin = accounts[0]
 
-  this.core = await Core.deployed()
-  this.bpool = await BPool.at(await this.core.bpool())
-  this.bFactory = await BFactory.deployed()
-  this.defiDollarToken = await DefiDollarToken.deployed()
-  this.numReserves = await this.core.numReserves()
-  this.oracle = await Oracle.at(await this.core.oracle())
-  this.reserves = []
-  this.aTokens = []
-  this.aggregators = []
-  for (let i = 0; i < this.numReserves; i++) {
-    this.reserves.push(await Reserve.at(await this.core.reserves(i)))
-    this.aTokens.push(await MockIAToken.at(await this.core.reserveToAtoken(this.reserves[i].address)))
-    await this.aTokens[i].mint(this.core.address, toWei('100000'), { from: admin })
-    this.aggregators.push(await Aggregator.at(await this.oracle.refs(i)))
-  }
-
+  const _artifacts = await utils.getArtifacts(artifacts, { oracle: true })
+  const numReserves = _artifacts.reserves.length
   // const coins = ['usd-coin', 'tether']
   // const coins = ['usd-coin', 'true-usd']
-  const coins = ['dai', 'usd-coin']
   // const coins = ['dai', 'nusd']
+  const coins = ['dai', 'usd-coin']
   const data = {}
   const deviations = { dusd: 0 }
   for (let i = 0; i < coins.length; i++) {
@@ -48,27 +23,34 @@ async function runSimulation() {
     deviations[id] = 0
   }
 
-  let numPricePoints = data[coins[0]].length
-
+  const numPricePoints = data[coins[0]].length
+  for (let j = 0; j < numReserves; j++) {
+    await _artifacts.aTokens[j].mint(_artifacts.core.address, toWei('15000')) // 15% of initial supply
+  }
   console.log(`Simulating for ${numPricePoints} price points...`)
   let profit = 0
-  await this.aTokens[0].approve(this.bpool.address, MAX, { from: user1 })
-  await this.aTokens[1].approve(this.bpool.address, MAX, { from: user1 })
   for (let i = 0; i < numPricePoints; i++) {
-    for (let j = 0; j < this.numReserves; j++) {
-      await this.aggregators[j].setLatestAnswer(floatToWei(data[coins[j]][i][1]))
+    for (let j = 0; j < numReserves; j++) {
+      await _artifacts.aggregators[j].setLatestAnswer(floatToWei(data[coins[j]][i][1]))
+      console.log(i, j, {
+        core: weiToFloatEther(await _artifacts.aTokens[j].balanceOf(_artifacts.core.address)),
+        pool: weiToFloatEther(await _artifacts.aTokens[j].balanceOf(_artifacts.pool.address)),
+        bpool: weiToFloatEther(await _artifacts.aTokens[j].balanceOf(_artifacts.bpool.address))
+      })
     }
-    await this.core.reBalance()
+    console.log((await _artifacts.oracle.getPriceFeed()).map(weiToFloatEther))
+    const r = await _artifacts.core.reBalance()
+    // printReBalance(r)
     const _prices = [ data[coins[0]][i][1], data[coins[1]][i][1] ]
-    const poolSize_0 = parseFloat(fromWei(await this.aTokens[0].balanceOf(this.bpool.address)))
-    const poolSize_1 = parseFloat(fromWei(await this.aTokens[1].balanceOf(this.bpool.address)))
+    const poolSize_0 = weiToFloatEther(await _artifacts.aTokens[0].balanceOf(_artifacts.bpool.address))
+    const poolSize_1 = weiToFloatEther(await _artifacts.aTokens[1].balanceOf(_artifacts.bpool.address))
     deviations[coins[0]] += Math.abs(data[coins[0]][i][1] - 1)
     deviations[coins[1]] += Math.abs(data[coins[1]][i][1] - 1)
     const newCoinValue = await getCoinValue(
       _prices,
-      this.aTokens,
-      this.bpool.address,
-      weiToFloatEther(await this.defiDollarToken.totalSupply())
+      _artifacts.aTokens,
+      _artifacts.bpool.address,
+      weiToFloatEther(await _artifacts.pool.totalSupply())
     )
     deviations.dusd += Math.abs(newCoinValue - 1)
     console.log(i, { _prices, poolSize_0, poolSize_1, newCoinValue })
@@ -86,11 +68,32 @@ async function getCoinValue(prices, aTokens, bpool, supply) {
 }
 
 function weiToFloatEther(num) {
-  return parseFloat(fromWei(num))
+  return parseFloat(fromWei(num.toString()))
 }
 
 function floatToWei(num) {
   return toWei(num.toString())
+}
+
+function printReBalance(r) {
+  r.logs.forEach(l => {
+    if (l.event === "DEBUG") {
+      console.log(
+        { a: weiToFloatEther(l.args.a), b: weiToFloatEther(l.args.b), c: weiToFloatEther(l.args.c) },
+        l.logIndex
+      )
+    } else if (l.event === "DEBUG2") {
+      console.log(l)
+    } else if (l.event === "DEBUG3") {
+      console.log(
+        { e: weiToFloatEther(l.args.e), f: weiToFloatEther(l.args.f), g: weiToFloatEther(l.args.g) },
+        l.logIndex
+      )
+    }
+    else if (l.event === "DEBUG4") {
+      console.log(l)
+    }
+  });
 }
 
 module.exports = async function (callback) {

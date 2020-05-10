@@ -1,8 +1,8 @@
 # DefiDollar
 
 ```
-truffle compile
-truffle migrate --reset
-truffle test
-INITIAL_AMOUNT=500000 truffle migrate --reset && truffle exec scripts/simulate.js
+npm run compile
+npm run migrate
+npm test
+INITIAL_AMOUNT=50000 truffle migrate --reset && truffle exec scripts/simulate.js
 ```

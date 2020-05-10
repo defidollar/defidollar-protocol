@@ -32,6 +32,7 @@ module.exports = async function (deployer, network, accounts) {
     aTokens.push(await aToken.at(await lendingPool.rToA(reserves[i].address)))
     aggregators.push(await Aggregator.new())
   }
+  // console.log({aTokens: aTokens.map(a => a.address)})
 
   // Deploy actual oracle
   await deployer.deploy(Oracle, aggregators.map(a => a.address))
@@ -53,6 +54,7 @@ module.exports = async function (deployer, network, accounts) {
     (new Array(NUM_RESERVES)).fill(weight) // endWeights
   );
   const pool = await Pool.deployed()
+  
   for (let i = 0; i < NUM_RESERVES; i++) {
     await aTokens[i].mint(admin, amount)
     await aTokens[i].approve(pool.address, amount)
@@ -69,8 +71,8 @@ module.exports = async function (deployer, network, accounts) {
     pool.address,
     oracle.address
   );
-  // const core = await Core.deployed()
-  await pool.setController(Core.address)
+  const core = await Core.deployed()
+  await pool.setController(core.address)
 
   // Deploy Aave
   await deployer.deploy(
