@@ -32,6 +32,13 @@ async function runSimulation() {
   }
   console.log(`Simulating for ${numPricePoints} price points...`)
   let profit = 0
+  // oracles use price relative to eth
+  // let that be constant at $200
+  const ethPrice = toBN(200)
+  // The latestAnswer value for all USD reference data contracts is multiplied by 100000000 before being written on-chain and
+  // by 1000000000000000000 for all ETH pairs.
+  await _artifacts.ethAggregator.setLatestAnswer(ethPrice.mul(toBN(100000000)))
+
   await _artifacts.aTokens[0].approve(_artifacts.bpool.address, MAX, { from: user1 })
   await _artifacts.aTokens[1].approve(_artifacts.bpool.address, MAX, { from: user1 })
   let mp1 = 0, mp2 = 0, m1 = 2, m2 = 2
@@ -84,7 +91,9 @@ async function runSimulation() {
     profit += _profit
 
     for (let j = 0; j < numReserves; j++) {
-      await _artifacts.aggregators[j].setLatestAnswer(floatToWei(data[coins[j]][i][1]))
+      // push price relative to eth
+      const price = toBN(floatToWei(data[coins[j]][i][1])).div(ethPrice)
+      await _artifacts.aggregators[j].setLatestAnswer(price)
     }
     console.log('rebalancing...')
     await _artifacts.core.reBalance()
