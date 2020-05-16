@@ -39,7 +39,7 @@ contract PCToken is ERC20Detailed {
     uint public constant MIN_POOL_SUPPLY   = BONE;
 
     constructor()
-    public ERC20Detailed("DefiDollar", "DUSD", 18) {}
+    public ERC20Detailed("DefiDollar", "DUSD-alpha2", 18) {}
 
     function badd(uint a, uint b)
         internal pure

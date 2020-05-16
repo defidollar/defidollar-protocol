@@ -1,6 +1,7 @@
 pragma solidity ^0.5.12;
 
 import "./balancer/smart-pools/LiquidityBootstrappingPool.sol";
+import { IAToken } from "./plugins/aave/IAToken.sol";
 
 contract Pool is LiquidityBootstrappingPool {
   uint public constant MIN_FEE = 10**12;
@@ -68,6 +69,20 @@ contract Pool is LiquidityBootstrappingPool {
     _bPool.rebind(token, balance, denorm);
     IERC20 erc20 = IERC20(token);
     // send any residue tokens to core
-    erc20.transfer(_controller, erc20.balanceOf(address(this)));
+    uint256 residueBalance = erc20.balanceOf(address(this));
+    if (residueBalance > 0) {
+      erc20.transfer(_controller, residueBalance);
+    }
+  }
+
+  function setController(address manager)
+    public
+    /* ACL is managed by super.setController */
+  {
+    super.setController(manager);
+    address[] memory tokens = _bPool.getCurrentTokens();
+    for (uint8 i = 0; i < tokens.length; i++) {
+      IAToken(tokens[i]).redirectInterestStreamOf(address(_bPool), manager);
+    }
   }
 }

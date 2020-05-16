@@ -25,7 +25,23 @@ contract MockIAToken is IAToken, ERC20Mintable {
     MockLendingPool(pool).redeemUnderlying(reserve, msg.sender, _amount);
   }
 
+  function _transfer(address sender, address recipient, uint256 amount) internal {
+    require(
+      amount > 0,
+      "Transferred amount needs to be greater than zero"
+    );
+    super._transfer(sender, recipient, amount);
+  }
+
   // function redirectInterestStream(address _to) external {
   //   interestRedirectionAddresses[msg.sender][_to];
   // }
+
+  function allowInterestRedirectionTo(address _to) external {
+    return;
+  }
+
+  function redirectInterestStreamOf(address _from, address _to) external {
+    return;
+  }
 }

@@ -73,7 +73,8 @@ contract LiquidityBootstrappingPool is PCToken {
 
 
     constructor(
-        address factoryAddress,
+        // address factoryAddress,
+        address bPool,
         address[] memory tokens,
         uint256[] memory startBalances,
         uint256[] memory startWeights,
@@ -83,7 +84,8 @@ contract LiquidityBootstrappingPool is PCToken {
         public
     {
         _controller = msg.sender;
-        _bFactory = IBFactory(factoryAddress);
+        // _bFactory = IBFactory(factoryAddress);
+        _bPool = IBPool(bPool);
         _tokens = tokens;
         _startBalances = startBalances;
         _startWeights = startWeights;
@@ -94,7 +96,7 @@ contract LiquidityBootstrappingPool is PCToken {
     }
 
     function setController(address manager)
-        external
+        public
         _logs_
         _lock_
     {
@@ -112,7 +114,7 @@ contract LiquidityBootstrappingPool is PCToken {
         require(!_created, "ERR_IS_CREATED");
 
         // Deploy new BPool
-        _bPool = _bFactory.newBPool();
+        // _bPool = _bFactory.newBPool();
 
         _bPool.setSwapFee(_swapFee);
         _bPool.setPublicSwap(true);
@@ -176,11 +178,11 @@ contract LiquidityBootstrappingPool is PCToken {
     function _pushUnderlying(address erc20, address to, uint amount)
         internal
     {
+        if (amount == 0) return;
         // Gets current Balance of token i, Bi, and weight of token i, Wi, from BPool.
         uint tokenBalance = _bPool.getBalance(erc20);
         uint tokenWeight = _bPool.getDenormalizedWeight(erc20);
         _bPool.rebind(erc20, bsub(tokenBalance, amount), tokenWeight);
-
         bool xfer = IERC20(erc20).transfer(to, amount);
         require(xfer, "ERR_ERC20_FALSE");
     }

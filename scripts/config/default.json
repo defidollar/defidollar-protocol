@@ -32,10 +32,13 @@
       "bFactory": "0x8f7F78080219d4066A8036ccD30D588B416a40DB"
     },
     "defidollar": {
-      "oracle": "0xF611a7cf6211a2d2611756ec5992DE555c63a030",
-      "pool": "0x0DB6fcc375D9D117ef989203AdfC2D622C9fc736",
-      "core": "0x0925C74886eF92a3A21040eA45B3CB08ac0c04c8",
-      "aave": "0xA30C5162bb9AB9655e663aBbE76481d488297e47"
+      "alpha1": {
+        "oracle": "0xF611a7cf6211a2d2611756ec5992DE555c63a030",
+        "pool": "0x0DB6fcc375D9D117ef989203AdfC2D622C9fc736",
+        "core": "0x0925C74886eF92a3A21040eA45B3CB08ac0c04c8",
+        "aave": "0xA30C5162bb9AB9655e663aBbE76481d488297e47",
+        "bpool": "0xeCf02Dcb2552D1f427F132974361cAa06d82cA7e"
+      }
     }
   }
 }

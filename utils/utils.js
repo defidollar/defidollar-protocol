@@ -11,7 +11,6 @@ async function getArtifacts(artifacts, options) {
   const IAToken = artifacts.require("MockIAToken");
   const Aggregator = artifacts.require("MockAggregator");
   const Oracle = artifacts.require("Oracle");
-
   if (!_artifacts) {
     _artifacts = {
       core: await Core.deployed(),

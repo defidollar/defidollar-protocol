@@ -6,6 +6,7 @@ const Pool = artifacts.require('Pool');
 const Core = artifacts.require("Core");
 const AavePlugin = artifacts.require("AavePlugin");
 const UniswapPlugin = artifacts.require("UniswapPlugin");
+const BPool = artifacts.require("BPool");
 const Reserve = artifacts.require("Reserve");
 const IAToken = artifacts.require("MockIAToken");
 const Aggregator = artifacts.require("MockAggregator");
@@ -41,6 +42,15 @@ async function execute() {
     console.log('Deployed Oracle at: ', oracle.address)
   }
 
+  let bpool
+  if (config.has('contracts.defidollar.bpool')) {
+    bpool = await BPool.at(config.get('contracts.defidollar.bpool'))
+  } else {
+    console.log('Deploying BPool...')
+    bpool = await BPool.new()
+    console.log('Deployed BPool at:', bpool.address)
+  }
+
   let pool
   const amount = web3.utils.toWei('50')
   const weight = web3.utils.toWei('10') // giving equal weight to each coin
@@ -49,29 +59,31 @@ async function execute() {
   } else {
     console.log('Deploying Pool...')
     pool = await Pool.new(
-      config.get('contracts.balancer.bFactory'),
+      bpool.address,
+      // config.get('contracts.balancer.bFactory'),
       aTokens.map(a => a.address), // tokens
       (new Array(NUM_RESERVES)).fill(amount), // startBalances
       (new Array(NUM_RESERVES)).fill(weight), // startWeights
       (new Array(NUM_RESERVES)).fill(weight) // endWeights
     )
-    console.log('Deployed Pool at: ', pool.address)
+    console.log('Deployed Pool at:', pool.address)
+    await bpool.setController(pool.address)
+    console.log('token approvals...')
+    const approvals = []
+    for (let i = 0; i < NUM_RESERVES; i++) {
+      approvals.push(aTokens[i].approve(pool.address, MAX))
+      // const balance = await aTokens[i].balanceOf(accounts[0])
+      // const allowance = await aTokens[i].allowance(accounts[0], pool.address)
+      // console.log({ balance: balance.toString(), allowance: allowance.toString() })
+    }
+    await Promise.all(approvals)
+    console.log('token completed...')
+
+    const initialSupply = web3.utils.toBN(amount).mul(web3.utils.toBN(NUM_RESERVES)) // assuming each coin is $1
+    await pool.createPool(initialSupply)
+    assert.equal((await pool.balanceOf(accounts[0])).toString(), initialSupply.toString())
   }
 
-  console.log('token approvals...')
-  const approvals = []
-  for (let i = 0; i < NUM_RESERVES; i++) {
-    approvals.push(aTokens[i].approve(pool.address, MAX))
-    // const balance = await aTokens[i].balanceOf(accounts[0])
-    // const allowance = await aTokens[i].allowance(accounts[0], pool.address)
-    // console.log({ balance: balance.toString(), allowance: allowance.toString() })
-  }
-  await Promise.all(approvals)
-  console.log('token completed...')
-
-  const initialSupply = web3.utils.toBN(amount).mul(web3.utils.toBN(NUM_RESERVES)) // assuming each coin is $1
-  await pool.createPool(initialSupply)
-  assert.equal((await pool.balanceOf(accounts[0])).toString(), initialSupply.toString())
 
   // Deploy Core
   let core
@@ -85,7 +97,7 @@ async function execute() {
       pool.address,
       oracle.address
     )
-    console.log('Deployed Core at: ', core.address)
+    console.log('Deployed Core at:', core.address)
     console.log('Setting pool controller to', core.address)
     await pool.setController(core.address)
   }

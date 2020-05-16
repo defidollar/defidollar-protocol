@@ -4,7 +4,8 @@ const MockLendingPool = artifacts.require("MockLendingPool");
 const aToken = artifacts.require("MockIAToken");
 
 const TMath = artifacts.require('TMath');
-const BFactory = artifacts.require('BFactory');
+// const BFactory = artifacts.require('BFactory');
+const BPool = artifacts.require('BPool');
 
 const Core = artifacts.require("Core");
 const AavePlugin = artifacts.require("AavePlugin");
@@ -44,20 +45,24 @@ module.exports = async function (deployer, network, accounts) {
 
   // Deploy Balancer things
   await deployer.deploy(TMath);
-  await deployer.deploy(BFactory);
+  // await deployer.deploy(BFactory);
+  await deployer.deploy(BPool);
+  const bPool = await BPool.deployed()
 
   // Balancer Pool
   const amount = web3.utils.toWei(process.env.INITIAL_AMOUNT || '50') // of each
   const weight = web3.utils.toWei('10') // giving equal weight to each coin
   await deployer.deploy(
     Pool,
-    BFactory.address, // factoryAddress
+    BPool.address, // passing bpool address instead
+    // BFactory.address, // factoryAddress
     aTokens.map(a => a.address), // tokens
     (new Array(NUM_RESERVES)).fill(amount), // startBalances
     (new Array(NUM_RESERVES)).fill(weight), // startWeights
     (new Array(NUM_RESERVES)).fill(weight) // endWeights
   );
   const pool = await Pool.deployed()
+  bPool.setController(pool.address)
 
   for (let i = 0; i < NUM_RESERVES; i++) {
     await aTokens[i].mint(admin, amount)

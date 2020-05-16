@@ -23,7 +23,7 @@ interface IBPool {
     function getNormalizedWeight(address token) external view returns (uint);
     function getTotalDenormalizedWeight() external view returns (uint);
     function setPublicSwap(bool public_) external;
-    
+    function getCurrentTokens() external view returns (address[] memory tokens);
     function calcPoolOutGivenSingleIn(
         uint tokenBalanceIn,
         uint tokenWeightIn,
@@ -70,11 +70,9 @@ interface IBPool {
 }
 
 interface IBFactory {
-
     function isBPool(address b) external view returns (bool);
     function newBPool() external returns (IBPool);
     function getBLabs() external view returns (address);
     function setBLabs(address b) external;
     function collect(IBPool pool) external;
-
 }
